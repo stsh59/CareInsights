@@ -1,0 +1,63 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+venv/
+.env/
+.venv/
+
+# Flask & Python-specific files
+instance/
+*.pyc
+
+# Environment variables file
+.env
+
+# Database files
+*.db
+*.sqlite3
+
+# Logs and local configuration files
+*.log
+*.pot
+*.pyo
+*.pyd
+*.out
+*.pid
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+
+# MySQL configuration files
+*.cnf
+
+# IDE-specific files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# MacOS system files
+.DS_Store
+
+# Node.js dependencies if you plan to use it later
+node_modules/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
