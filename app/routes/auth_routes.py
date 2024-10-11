@@ -21,15 +21,15 @@ def signup():
     password = request.form.get("password")
 
     if not name or not email or not password:
-        return jsonify({"success": False, "error": "All fields are required"}), 400
+        flash("All fields are required.", "error")
+        return redirect(url_for("templates_bp.signup_page"))
 
     cursor = mysql.connection.cursor()
     cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
     existing_user = cursor.fetchone()
     if existing_user:
-        return jsonify(
-            {"success": False, "error": "User with this email address already exists"}
-        ), 400
+        flash("User with this email address already exists", "error")
+        return redirect(url_for("templates_bp.signup_page"))
 
     # Hash the password using bcrypt
     hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
