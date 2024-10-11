@@ -11,6 +11,9 @@ venv/
 .env/
 .venv/
 
+# Node Modules
+node_modules/
+
 # Flask & Python-specific files
 instance/
 *.pyc
