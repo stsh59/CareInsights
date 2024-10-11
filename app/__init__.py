@@ -15,7 +15,7 @@ def create_app():
     app.config["MYSQL_HOST"] = "localhost"
     app.config["MYSQL_USER"] = "root"
     app.config["MYSQL_PASSWORD"] = "password"
-    app.config["MYSQL_DB"] = "todo_db"
+    app.config["MYSQL_DB"] = "care_insights"
     mysql.init_app(app)
 
     # Session
