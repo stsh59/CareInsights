@@ -1,12 +1,4 @@
-from flask import (
-    Blueprint,
-    request,
-    jsonify,
-    flash,
-    session,
-    url_for,
-    redirect,
-)
+from flask import Blueprint, request, jsonify, flash, session, url_for, redirect
 import bcrypt
 import uuid
 from app.db import mysql
@@ -21,29 +13,29 @@ def signup():
     password = request.form.get("password")
 
     if not name or not email or not password:
-        flash("All fields are required.", "error")
-        return redirect(url_for("templates_bp.signup_page"))
+        return jsonify({"success": False, "message": "All fields are required."}), 400
 
-    cursor = mysql.connection.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-    existing_user = cursor.fetchone()
-    if existing_user:
-        flash("User with this email address already exists", "error")
-        return redirect(url_for("templates_bp.signup_page"))
+    # Password complexity check
+    if len(password) < 8:
+        return jsonify({"success": False, "message": "Password must be at least 8 characters long."}), 400
 
-    # Hash the password using bcrypt
-    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    with mysql.connection.cursor() as cursor:
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        existing_user = cursor.fetchone()
+        if existing_user:
+            return jsonify({"success": False, "message": "User with this email already exists."}), 409
 
-    user_id = str(uuid.uuid4())
+        # Hash the password
+        hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
-    cursor.execute(
-        "INSERT INTO users (id, name, email, password) VALUES (%s, %s, %s, %s)",
-        (user_id, name, email, hashed_password.decode("utf-8")),
-    )
-    mysql.connection.commit()
-    cursor.close()
+        user_id = str(uuid.uuid4())
+        cursor.execute(
+            "INSERT INTO users (id, name, email, password) VALUES (%s, %s, %s, %s)",
+            (user_id, name, email, hashed_password),
+        )
+        mysql.connection.commit()
 
-    return redirect(url_for("templates_bp.login_page"))
+    return jsonify({"success": True, "message": "User registered successfully."}), 201
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -52,46 +44,41 @@ def login():
     password = request.form.get("password")
 
     if not email or not password:
-        flash("Email and password is required.", "error")
-        return redirect(url_for("templates_bp.login_page"))
+        return jsonify({"success": False, "message": "Email and password are required."}), 400
 
-    cursor = mysql.connection.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-    user = cursor.fetchone()
-    cursor.close()
+    with mysql.connection.cursor() as cursor:
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
 
     if not user:
-        flash("Invalid email, User with this email doesn't exist!", "error")
-        return redirect(url_for("templates_bp.login_page"))
+        return jsonify({"success": False, "message": "Invalid email or password."}), 401
 
     if not bcrypt.checkpw(password.encode("utf-8"), user[3].encode("utf-8")):
-        flash("The password you entered is incorrect!", "error")
-        return redirect(url_for("templates_bp.login_page"))
+        return jsonify({"success": False, "message": "Invalid email or password."}), 401
 
-    user_data = {"id": user[0], "name": user[1], "email": user[2]}
+    session.permanent = True  # Set session expiration policy if needed
+    session["user_id"] = user[0]
+    session["user_name"] = user[1]
+    session["user_email"] = user[2]
 
-    session["user_id"] = user_data["id"]
-    session["user_name"] = user_data["name"]
-    session["user_email"] = user_data["email"]
-
-    return redirect(url_for("templates_bp.home_page"))
+    return jsonify({"success": True, "message": "Logged in successfully."}), 200
 
 
 @auth_bp.route("/me", methods=["GET"])
 def get_me():
     user_id = session.get("user_id")
-    user_name = session.get("user_name")
-    user_email = session.get("user_email")
-
     if not user_id:
         return jsonify({"success": False, "error": "User is not logged in"}), 401
 
-    user = {"id": user_id, "name": user_name, "email": user_email}
-
+    user = {
+        "id": user_id,
+        "name": session.get("user_name"),
+        "email": session.get("user_email"),
+    }
     return jsonify({"success": True, "user": user}), 200
 
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
     session.clear()
-    return redirect(url_for("templates_bp.login_page"))
+    return jsonify({"success": True, "message": "Logged out successfully."}), 200
